@@ -65,7 +65,7 @@ static VALUE gdb_execute(VALUE self, VALUE arg1){
         puts("-> error");
         return Qnil;
     }
-    memcpy(code, RSTRING_PTR(arg1), RSTRING_LEN(arg1) + 1);
+    memcpy(code, RSTRING_PTR(arg1), RSTRING_LEN(arg1));
 
     result = execute_command_to_string(code, 0);
     free(code);
