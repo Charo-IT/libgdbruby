@@ -10,8 +10,7 @@ Note: this is an experimental project.
 $ cd libgdbruby
 $ vim Makefile  # maybe you need to modify some variables
 $ make
-$ cd ../
-$ echo "source `realpath ./gdbruby.py` >> ~/.gdbinit
+$ echo "source /path/to/gdbruby.py" >> ~/.gdbinit
 ```
 
 ## Sample
