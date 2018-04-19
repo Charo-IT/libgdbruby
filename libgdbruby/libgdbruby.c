@@ -25,6 +25,11 @@ static void eval_ruby(const char *script){
     VALUE command;
     RUBY_INIT_STACK;
 
+    if(script == NULL){
+        puts("no script given");
+        return;
+    }
+
     command = rb_str_new2(script);
     result = rb_protect(eval_ruby_internal, command, &state);;
 
