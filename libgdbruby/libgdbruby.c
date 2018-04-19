@@ -130,6 +130,7 @@ static void __attribute__((constructor)) onload(){
 
         ruby_init();
         ruby_options(a, arg);  // a hacky way to get ruby initialized :P
+        ruby_script("gdbruby");
 
         rb_define_global_function("gdb_execute", gdb_execute, 1);
         rb_eval_string_protect("require 'pry'", &state);  // why doesn't rb_require("pry") work? :(
