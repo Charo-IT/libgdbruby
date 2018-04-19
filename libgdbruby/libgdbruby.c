@@ -18,10 +18,46 @@ static VALUE eval_ruby_internal(VALUE command){
     return rb_funcall(gdbruby_binding, rb_intern("eval"), 1, command);
 }
 
-static void eval_ruby(const char *script){
-    int state;
+static VALUE error_handler(VALUE args, VALUE exception_object){
+    unsigned long i, length;
+    VALUE message;
+    VALUE backtrace;
+    VALUE item;
+    RUBY_INIT_STACK;
 
-    VALUE result;
+    if(NIL_P(exception_object)){
+        puts("error");
+        return Qnil;
+    }
+
+    message = rb_funcall(exception_object, rb_intern("to_s"), 0);
+    backtrace = rb_funcall(exception_object, rb_intern("backtrace"), 0);
+
+    if(NIL_P(message)){
+        printf("%1$s: %1$s\n", rb_obj_classname(exception_object));
+    }else{
+        SafeStringValue(message);
+        printf("%s: %s\n", rb_obj_classname(exception_object), RSTRING_PTR(message));
+    }
+
+    if(NIL_P(backtrace)){
+        return Qnil;
+    }
+
+    length = NUM2LONG(rb_funcall(backtrace, rb_intern("length"), 0));
+    for(i = 0; length > 1 && i < length - 1; i++){
+        item = rb_ary_entry(backtrace, i);
+        if(NIL_P(item)){
+            continue;
+        }
+        SafeStringValue(item);
+        printf("    from %s\n", RSTRING_PTR(item));
+    }
+
+    return Qnil;
+}
+
+static void eval_ruby(const char *script){
     VALUE command;
     RUBY_INIT_STACK;
 
@@ -31,11 +67,7 @@ static void eval_ruby(const char *script){
     }
 
     command = rb_str_new2(script);
-    result = rb_protect(eval_ruby_internal, command, &state);;
-
-    if(state){
-        puts("-> error");
-    }
+    rb_rescue(eval_ruby_internal, command, error_handler, Qnil);
 }
 
 // just call $gdbruby_binding.pry
