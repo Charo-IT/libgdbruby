@@ -8,7 +8,7 @@ Note: this is an experimental project.
 ## Installation
 ```
 $ git clone https://github.com/Charo-IT/libgdbruby.git
-$ cd libgdbruby
+$ cd libgdbruby/libgdbruby
 $ ruby extconf.rb
 $ make
 $ echo "source /path/to/gdbruby.py" >> ~/.gdbinit
