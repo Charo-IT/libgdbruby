@@ -143,6 +143,6 @@ static void __attribute__((constructor)) onload(){
     }
 
     /* Add ruby and pry command to gdb */
-    add_com("ruby", no_class, eval_ruby, "eval ruby\n");
-    add_com("pry", no_class, launch_pry, "launch pry\n");
+    add_com("ruby", no_class, eval_ruby, "Evaluate a Ruby command.");
+    add_com("pry", no_class, launch_pry, "Launch pry.");
 }
