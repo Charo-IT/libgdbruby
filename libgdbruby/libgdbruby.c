@@ -79,10 +79,9 @@ static VALUE launch_pry_internal(){
 
 static void launch_pry(){
     int state;
-    VALUE result;
     RUBY_INIT_STACK;
 
-    result = rb_protect(launch_pry_internal, Qnil, &state);
+    rb_protect(launch_pry_internal, Qnil, &state);
 
     if(state){
         puts("-> error");
@@ -119,8 +118,8 @@ static VALUE gdb_execute(VALUE self, VALUE arg1){
 
 static void __attribute__((constructor)) onload(){
     int a = 3;
-    char *args[] = {"ruby", "-e", "", NULL};
-    char **arg = args;
+    const char *args[] = {"ruby", "-e", "", NULL};
+    char **arg = (char **)args;
     int state;
 
     /* Initialize Ruby VM */

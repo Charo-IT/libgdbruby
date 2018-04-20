@@ -7,8 +7,9 @@ Note: this is an experimental project.
 
 ## Installation
 ```
+$ git clone https://github.com/Charo-IT/libgdbruby.git
 $ cd libgdbruby
-$ vim Makefile  # maybe you need to modify some variables
+$ ruby extconf.rb
 $ make
 $ echo "source /path/to/gdbruby.py" >> ~/.gdbinit
 ```

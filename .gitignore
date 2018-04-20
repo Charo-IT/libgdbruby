@@ -1,1 +1,3 @@
 libgdbruby/libgdbruby.so
+libgdbruby/libgdbruby.o
+libgdbruby/Makefile
