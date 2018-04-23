@@ -11,7 +11,8 @@ $ git clone https://github.com/Charo-IT/libgdbruby.git
 $ cd libgdbruby/libgdbruby
 $ ruby extconf.rb
 $ make
-$ echo "source /path/to/gdbruby.py" >> ~/.gdbinit
+$ echo "source /path/to/libgdbruby/gdbruby.py" >> ~/.gdbinit
+$ echo "ruby load '/path/to/libgdbruby/gdbhelper/helper.rb'" >> ~/.gdbinit
 ```
 
 ## Sample
