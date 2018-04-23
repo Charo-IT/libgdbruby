@@ -1,15 +1,22 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ruby.h>
+#ifdef GDB_CPP
+#include <string>
+#endif
+#include "gdb.h"
 
-enum command_class {
-    no_class = -1
-};
-
-extern void *add_com(const char *name, enum command_class theclass, void *func, const char *doc);
-extern char *execute_command_to_string(const char *p, int from_tty);
-extern void xfree(void *p);
+#ifdef GDB_CPP
+extern void *add_com(const char *, command_class, void (*)(char const *, int), const char *);
+extern std::string execute_command_to_string(const char *, int);
+#else
+extern "C" void *add_com(const char *, command_class, void (*)(char const *, int), const char *);
+extern "C" char *execute_command_to_string(const char *, int);
+#endif
 
 static VALUE gdbruby_binding;
+static VALUE rb_eGdbError;
 
 // just call $gdbruby_binding.eval(command)
 static VALUE eval_ruby_internal(VALUE command){
@@ -67,7 +74,7 @@ static void eval_ruby(const char *script){
     }
 
     command = rb_str_new2(script);
-    rb_rescue(eval_ruby_internal, command, error_handler, Qnil);
+    rb_rescue((VALUE (*)(ANYARGS))eval_ruby_internal, command, (VALUE (*)(ANYARGS))error_handler, Qnil);
 }
 
 // just call $gdbruby_binding.pry
@@ -81,7 +88,7 @@ static void launch_pry(){
     int state;
     RUBY_INIT_STACK;
 
-    rb_protect(launch_pry_internal, Qnil, &state);
+    rb_protect((VALUE (*)(VALUE))launch_pry_internal, Qnil, &state);
 
     if(state){
         puts("-> error");
@@ -90,28 +97,51 @@ static void launch_pry(){
 
 static VALUE gdb_execute(VALUE self, VALUE arg1){
     char *code;
+#ifdef GDB_CPP
+    std::string result;
+    char *result_cstr;
+#else
     char *result;
+#endif
     VALUE rb_result;
     RUBY_INIT_STACK;
 
     SafeStringValue(arg1);
 
-    code = calloc(1, RSTRING_LEN(arg1) + 1);
+    code = (char *)calloc(1, RSTRING_LEN(arg1) + 1);
     if(code == NULL){
         puts("-> error");
         return Qnil;
     }
     memcpy(code, RSTRING_PTR(arg1), RSTRING_LEN(arg1));
 
-    result = execute_command_to_string(code, 0);
+    TRY{
+        result = execute_command_to_string(code, 0);
+    }CATCH(except, RETURN_MASK_ALL){
+        free(code);
+
+        if(except.reason == RETURN_QUIT){
+            rb_raise(rb_eInterrupt, "Interrupt");
+        }else{
+            rb_raise(rb_eGdbError, "%s", except.message);
+        }
+    }END_CATCH
+
     free(code);
 
+#ifdef GDB_CPP
+    result_cstr = strdup(result.c_str());
+
+    rb_result = rb_str_new2(result_cstr);
+    free(result_cstr);
+#else
     if(result == NULL){
         return Qnil;
     }
 
     rb_result = rb_str_new2(result);
-    xfree(result);
+    free(result);
+#endif
 
     return rb_result;
 }
@@ -131,7 +161,7 @@ static void __attribute__((constructor)) onload(){
         ruby_options(a, arg);  // a hacky way to get ruby initialized :P
         ruby_script("gdbruby");
 
-        rb_define_global_function("gdb_execute", gdb_execute, 1);
+        rb_define_global_function("gdb_execute", (VALUE (*)(ANYARGS))gdb_execute, 1);
         rb_eval_string_protect("require 'pry'", &state);  // why doesn't rb_require("pry") work? :(
         if(state){
             puts("failed to load pry");
@@ -139,9 +169,11 @@ static void __attribute__((constructor)) onload(){
 
         gdbruby_binding = rb_funcall(Qnil, rb_intern("binding"), 0);
         rb_define_readonly_variable("gdbruby_binding", &gdbruby_binding);
+
+        rb_eGdbError = rb_define_class("GdbError", rb_eStandardError);
     }
 
     /* Add ruby and pry command to gdb */
-    add_com("ruby", no_class, eval_ruby, "Evaluate a Ruby command.");
-    add_com("pry", no_class, launch_pry, "Launch pry.");
+    add_com("ruby", no_class, (void (*)(char const *, int))eval_ruby, "Evaluate a Ruby command.");
+    add_com("pry", no_class, (void (*)(char const *, int))launch_pry, "Launch pry.");
 }
